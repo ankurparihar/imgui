@@ -49,6 +49,8 @@ Index of this file:
 #endif
 
 #include "imgui.h"
+#include "Application.h"
+#include "Settings.h"
 #include <ctype.h>          // toupper, isprint
 #include <limits.h>         // INT_MIN, INT_MAX
 #include <math.h>           // sqrtf, powf, cosf, sinf, floorf, ceilf
@@ -123,6 +125,24 @@ static void ShowExampleAppWindowTitles(bool* p_open);
 static void ShowExampleAppCustomRendering(bool* p_open);
 static void ShowExampleMenuFile();
 
+// settings
+static int DemoIndex = 1;
+static int demoIndex = 1;
+static bool exitApp = false;
+static bool wireframe = false;
+static bool wireframe_new = false;
+static bool z_buffer = true;
+static bool z_buffer_new = true;
+static int window_width = 1280;
+static int window_width_new = 1280;
+static int window_height = 720;
+static int window_height_new = 720;
+static int min_window_width = 512;
+static int min_window_height = 512;
+static int max_window_width = 1280;
+static int max_window_height = 720;
+static ImVec4 color = ImColor(114, 144, 154, 200);
+
 // Helper to display a little (?) mark which shows a tooltip when hovered.
 static void ShowHelpMarker(const char* desc)
 {
@@ -175,6 +195,14 @@ static void ShowDemoWindowMisc();
 // You may execute this function to experiment with the UI and understand what it does. You may then search for keywords in the code when you are interested by a specific feature.
 void ImGui::ShowDemoWindow(bool* p_open)
 {
+	sparky::Application* app_instance = sparky::Application::s_Instance;
+	GLFWwindow* window_ptr = static_cast<GLFWwindow*>(app_instance->GetWindow().GetNativeWindow());
+	DemoIndex = app_instance->DemoIndex;
+	demoIndex = DemoIndex;
+	glfwGetWindowSize(window_ptr, &window_width, &window_height);
+	window_width_new = window_width;
+	window_height_new = window_height;
+
     // Examples Apps (accessible from the "Examples" menu)
     static bool show_app_documents = false;
     static bool show_app_main_menu_bar = false;
@@ -258,8 +286,10 @@ void ImGui::ShowDemoWindow(bool* p_open)
         if (ImGui::BeginMenu("Menu"))
         {
             ShowExampleMenuFile();
+			ImGui::MenuItem("Quit Application", NULL, &exitApp);
             ImGui::EndMenu();
         }
+		
         if (ImGui::BeginMenu("Examples"))
         {
             ImGui::MenuItem("Main menu bar", NULL, &show_app_main_menu_bar);
@@ -384,12 +414,165 @@ void ImGui::ShowDemoWindow(bool* p_open)
     }
 
     // All demo contents
-    ShowDemoWindowWidgets();
-    ShowDemoWindowLayout();
-    ShowDemoWindowPopups();
-    ShowDemoWindowColumns();
-    ShowDemoWindowMisc();
+    // ShowDemoWindowWidgets();
+    // ShowDemoWindowLayout();
+    // ShowDemoWindowPopups();
+    // ShowDemoWindowColumns();
+    // ShowDemoWindowMisc();
 
+	ImGui::Separator();
+	ImGui::Text("Sparky Options");
+	if (ImGui::CollapsingHeader("Demo selection")) {
+		if (ImGui::TreeNode("Getting started")) {
+			ImGui::RadioButton("Hello window", &demoIndex, 1);
+			ImGui::RadioButton("Simple triangle", &demoIndex, 2);
+			ImGui::RadioButton("Simple Rectangle", &demoIndex, 3);
+			if (ImGui::TreeNode("Shaders")) {
+				ImGui::RadioButton("Time color", &demoIndex, 4);
+				ImGui::RadioButton("Spatial color", &demoIndex, 5);
+				ImGui::TreePop();
+			}
+			if (ImGui::TreeNode("Textures")) {
+				ImGui::RadioButton("Solo texture", &demoIndex, 6);
+				ImGui::RadioButton("Mixed texture", &demoIndex, 7);
+				ImGui::TreePop();
+			}
+			ImGui::RadioButton("Transforms", &demoIndex, 8); ImGui::SameLine();
+			ImGui::Checkbox("rotate_first", &(app_instance->case_8_order));
+			ImGui::RadioButton("Going 3D", &demoIndex, 9); ImGui::SameLine();
+			ImGui::Checkbox("10 cubes", &(app_instance->case_9_multi));
+			ImGui::RadioButton("Camera and movement", &demoIndex, 10);
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Lightening")) {
+			ImGui::RadioButton("2D lightening", &demoIndex, 11);
+			ImGui::RadioButton("Colors", &demoIndex, 12);
+			ImGui::RadioButton("Basic-Lighting", &demoIndex, 13);
+			ImGui::TreePop();
+		}
+	}
+	// State options
+	if (ImGui::CollapsingHeader("State options")) {
+		ImGui::Checkbox("Wireframe", &wireframe_new);
+		ImGui::Checkbox("z-buffer", &z_buffer_new);
+		ImGui::SliderInt("Window width", &window_width_new, 512, 1280);
+		ImGui::SliderInt("Window height", &window_height_new, 512, 720);
+	}
+	// Camera options
+	if (ImGui::CollapsingHeader("Camera options")) {
+		ImGui::SliderFloat("camera movement sensitivity", &(app_instance->camera->sense_move), 0.0f, 10.0f);
+		ImGui::SliderFloat("camera rotation sensitivity", &(app_instance->camera->sense_look), 0.0f, 0.5f);
+		ImGui::Checkbox("Mouse look around", &(app_instance->mouseLookAround));
+		ImGui::PushID("pitch_col");
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(1 / 7.0f, 0.5f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(1 / 7.0f, 0.9f, 0.9f));
+		ImGui::VSliderFloat("pitch", ImVec2(20, 150), &(app_instance->camera->pitch), -75.0f, 75.0f);
+		ImGui::PopID();
+		ImGui::PopStyleColor(2);
+		ImGui::Indent(20);
+		ImGui::PushID("yaw_col");
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(2 / 7.0f, 0.5f, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(2 / 7.0f, 0.9f, 0.9f));
+		ImGui::SliderFloat("  yaw", &(app_instance->camera->yaw), -180.0f, 180.0f);
+		ImGui::PopID();
+		ImGui::PopStyleColor(2);
+
+		// ImGui::SliderFloat("pitch", &(app_instance->camera->pitch), -75.0f, 75.0f);
+	}
+
+	if (ImGui::CollapsingHeader("Color/Picker Widgets"))
+	{
+
+		static bool alpha_preview = true;
+		static bool alpha_half_preview = false;
+		static bool drag_and_drop = true;
+		static bool options_menu = true;
+		static bool hdr = false;
+		
+		int misc_flags = (hdr ? ImGuiColorEditFlags_HDR : 0) | (drag_and_drop ? 0 : ImGuiColorEditFlags_NoDragDrop) | (alpha_half_preview ? ImGuiColorEditFlags_AlphaPreviewHalf : (alpha_preview ? ImGuiColorEditFlags_AlphaPreview : 0)) | (options_menu ? 0 : ImGuiColorEditFlags_NoOptions);
+
+		ImGui::Text("Color picker:");
+		static bool alpha = true;
+		static bool alpha_bar = true;
+		static bool side_preview = true;
+		static bool ref_color = false;
+		static ImVec4 ref_color_v(1.0f, 0.0f, 1.0f, 0.5f);
+		static int inputs_mode = 2;
+		static int picker_mode = 0;
+		ImGui::Checkbox("With Alpha", &alpha);
+		ImGui::Checkbox("With Alpha Bar", &alpha_bar);
+		ImGui::Checkbox("With Side Preview", &side_preview);
+		if (side_preview)
+		{
+			ImGui::SameLine();
+			ImGui::Checkbox("With Ref Color", &ref_color);
+			if (ref_color)
+			{
+				ImGui::SameLine();
+				ImGui::ColorEdit4("##RefColor", &ref_color_v.x, ImGuiColorEditFlags_NoInputs | misc_flags);
+			}
+		}
+		ImGui::Combo("Inputs Mode", &inputs_mode, "All Inputs\0No Inputs\0RGB Input\0HSV Input\0HEX Input\0");
+		ImGui::Combo("Picker Mode", &picker_mode, "Auto/Current\0Hue bar + SV rect\0Hue wheel + SV triangle\0");
+		ImGui::SameLine(); ShowHelpMarker("User can right-click the picker to change mode.");
+		ImGuiColorEditFlags flags = misc_flags;
+		if (!alpha) flags |= ImGuiColorEditFlags_NoAlpha; // This is by default if you call ColorPicker3() instead of ColorPicker4()
+		if (alpha_bar) flags |= ImGuiColorEditFlags_AlphaBar;
+		if (!side_preview) flags |= ImGuiColorEditFlags_NoSidePreview;
+		if (picker_mode == 1) flags |= ImGuiColorEditFlags_PickerHueBar;
+		if (picker_mode == 2) flags |= ImGuiColorEditFlags_PickerHueWheel;
+		if (inputs_mode == 1) flags |= ImGuiColorEditFlags_NoInputs;
+		if (inputs_mode == 2) flags |= ImGuiColorEditFlags_RGB;
+		if (inputs_mode == 3) flags |= ImGuiColorEditFlags_HSV;
+		if (inputs_mode == 4) flags |= ImGuiColorEditFlags_HEX;
+		ImGui::ColorPicker4("MyColor##4", (float*)&color, flags, ref_color ? &ref_color_v.x : NULL);
+
+	}
+	
+	// Analyze
+	if (exitApp) {
+		app_instance->quitApplication();
+	}
+	if (demoIndex != DemoIndex) {
+		DemoIndex = demoIndex;
+		app_instance->swap_demo(DemoIndex);
+	}
+	if (wireframe_new != wireframe) {
+		wireframe = wireframe_new;
+		app_instance->flip_wireframe_mode();
+	}
+	if (z_buffer_new != z_buffer) {
+		z_buffer = z_buffer_new;
+		app_instance->flip_z_buffer();
+	}
+	if ((window_width_new != window_width) || (window_height_new != window_height)) {
+		window_width = window_width_new;
+		window_height = window_height_new;
+		glfwSetWindowSize(window_ptr, window_width, window_height);
+	}
+	if (window_width < min_window_width) {
+		window_width = min_window_width;
+		glfwSetWindowSize(window_ptr, window_width, window_height);
+	}
+	if (window_width > max_window_width) {
+		window_width = max_window_width;
+		glfwSetWindowSize(window_ptr, window_width, window_height);
+	}
+	if (window_height < min_window_height) {
+		window_height = min_window_height;
+		glfwSetWindowSize(window_ptr, window_width, window_height);
+	}
+	if (window_height > max_window_height) {
+		window_height = max_window_height;
+		glfwSetWindowSize(window_ptr, window_width, window_height);
+	}
+	// colors
+	{
+		app_instance->color_r = color.x;
+		app_instance->color_g = color.y;
+		app_instance->color_b = color.z;
+		app_instance->color_a = color.w;
+	}
     // End of ShowDemoWindow()
     ImGui::End();
 }
