@@ -141,7 +141,7 @@ static int min_window_width = 512;
 static int min_window_height = 512;
 static int max_window_width = 1280;
 static int max_window_height = 720;
-static ImVec4 color = ImColor(114, 144, 154, 200);
+static ImVec4 color = ImColor(255, 255, 255, 255);
 
 // Helper to display a little (?) mark which shows a tooltip when hovered.
 static void ShowHelpMarker(const char* desc)
@@ -447,8 +447,20 @@ void ImGui::ShowDemoWindow(bool* p_open)
 		if (ImGui::TreeNode("Lightening")) {
 			ImGui::RadioButton("2D lightening", &demoIndex, 11);
 			ImGui::RadioButton("Colors", &demoIndex, 12);
-			ImGui::RadioButton("Basic-Lighting", &demoIndex, 13);
+			ImGui::RadioButton("Basic-3D-Lighting", &demoIndex, 13);
 			ImGui::TreePop();
+		}
+	}
+	// Case specific options
+	if (ImGui::CollapsingHeader("Case options")) {
+		if (demoIndex == 13) {
+			ImGui::Checkbox("Rotate", &(app_instance->case_13_rotate));
+			ImGui::SliderFloat("rotation speed", &(app_instance->case_13_speed), 0.0f, 30.0f);
+			if (!(app_instance->case_13_rotate)) {
+				ImGui::SliderFloat("theta", &(app_instance->case_13_theta), -180, 180);
+			}
+			ImGui::SliderFloat("phi", &(app_instance->case_13_phi), -90, 90);
+			ImGui::SliderFloat("radius", (&app_instance->case_13_radius), 0.0f, 5.0f);
 		}
 	}
 	// State options
