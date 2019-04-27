@@ -142,6 +142,7 @@ static int min_window_height = 512;
 static int max_window_width = 1280;
 static int max_window_height = 720;
 static ImVec4 color = ImColor(255, 255, 255, 255);
+static int resetCamera = 0;
 
 // Helper to display a little (?) mark which shows a tooltip when hovered.
 static void ShowHelpMarker(const char* desc)
@@ -240,15 +241,15 @@ void ImGui::ShowDemoWindow(bool* p_open)
     if (show_app_about)               { ImGui::ShowAboutWindow(&show_app_about); }
 
     // Demonstrate the various window flags. Typically you would just use the default!
-    static bool no_titlebar = false;
-    static bool no_scrollbar = false;
+    static bool no_titlebar = true;
+    static bool no_scrollbar = true;
     static bool no_menu = false;
-    static bool no_move = false;
+    static bool no_move = true;
     static bool no_resize = false;
     static bool no_collapse = false;
     static bool no_close = false;
     static bool no_nav = false;
-    static bool no_background = false;
+    static bool no_background = true;
     static bool no_bring_to_front = false;
 
     ImGuiWindowFlags window_flags = 0;
@@ -274,7 +275,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
         ImGui::End();
         return;
     }
-    ImGui::Text("dear imgui says hello. (%s)", IMGUI_VERSION);
+    // ImGui::Text("dear imgui says hello. (%s)", IMGUI_VERSION);
 
     // Most "big" widgets share a common width settings by default.
     //ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65f);    // Use 2/3 of the space for widgets and 1/3 for labels (default)
@@ -437,10 +438,8 @@ void ImGui::ShowDemoWindow(bool* p_open)
 				ImGui::RadioButton("Mixed texture", &demoIndex, 7);
 				ImGui::TreePop();
 			}
-			ImGui::RadioButton("Transforms", &demoIndex, 8); ImGui::SameLine();
-			ImGui::Checkbox("rotate_first", &(app_instance->case_8_order));
-			ImGui::RadioButton("Going 3D", &demoIndex, 9); ImGui::SameLine();
-			ImGui::Checkbox("10 cubes", &(app_instance->case_9_multi));
+			ImGui::RadioButton("Transforms", &demoIndex, 8);
+			ImGui::RadioButton("Going 3D", &demoIndex, 9);
 			ImGui::RadioButton("Camera and movement", &demoIndex, 10);
 			ImGui::TreePop();
 		}
@@ -453,7 +452,20 @@ void ImGui::ShowDemoWindow(bool* p_open)
 	}
 	// Case specific options
 	if (ImGui::CollapsingHeader("Case options")) {
-		if (demoIndex == 13) {
+		switch (demoIndex)
+		{
+		case 8:
+		{
+			ImGui::Checkbox("rotate_first", &(app_instance->case_8_order));
+		}
+		break;
+		case 9:
+		{
+			ImGui::Checkbox("10 cubes", &(app_instance->case_9_multi));
+		}
+		break;
+		case 13:
+		{
 			ImGui::Checkbox("Rotate", &(app_instance->case_13_rotate));
 			ImGui::SliderFloat("rotation speed", &(app_instance->case_13_speed), 0.0f, 30.0f);
 			if (!(app_instance->case_13_rotate)) {
@@ -461,6 +473,28 @@ void ImGui::ShowDemoWindow(bool* p_open)
 			}
 			ImGui::SliderFloat("phi", &(app_instance->case_13_phi), -90, 90);
 			ImGui::SliderFloat("radius", (&app_instance->case_13_radius), 0.0f, 5.0f);
+		}
+		break;
+		case 14:
+		{
+			ImGui::Checkbox("Rotate", &(app_instance->case_13_rotate));
+			ImGui::SliderFloat("rotation speed", &(app_instance->case_13_speed), 0.0f, 30.0f);
+			if (!(app_instance->case_13_rotate)) {
+				ImGui::SliderFloat("theta", &(app_instance->case_13_theta), -180, 180);
+			}
+			ImGui::SliderFloat("phi", &(app_instance->case_13_phi), -90, 90);
+			ImGui::SliderFloat("radius", (&app_instance->case_13_radius), 0.0f, 5.0f);
+			const char* materials[] = {
+				"Emerald", "Jade", "Obsidian", "Pearl", "Ruby", "Turquoise",
+				"Brass", "Bronze", "Chrome", "Copper", "Gold", "Silver",
+				"Black plastic", "Cyan plastic", "Green plastic", "Red plastic", "White plastic", "Yellow plastic",
+				"Black rubber", "Cyan rubber", "Green rubber", "Red rubber", "White rubber", "Yellow rubber"
+			};
+			ImGui::Combo("Material", &(app_instance->case_14_mat), materials, IM_ARRAYSIZE(materials));
+		}
+		break;
+		default:
+			break;
 		}
 	}
 	// State options
@@ -472,6 +506,10 @@ void ImGui::ShowDemoWindow(bool* p_open)
 	}
 	// Camera options
 	if (ImGui::CollapsingHeader("Camera options")) {
+		ImGui::Checkbox("Reset Camera on switch", &(app_instance->resetCamera));
+		if (ImGui::Button("Reset camera")) {
+			app_instance->camera->resetCamera();
+		}
 		ImGui::SliderFloat("camera movement sensitivity", &(app_instance->camera->sense_move), 0.0f, 10.0f);
 		ImGui::SliderFloat("camera rotation sensitivity", &(app_instance->camera->sense_look), 0.0f, 0.5f);
 		ImGui::Checkbox("Mouse look around", &(app_instance->mouseLookAround));
