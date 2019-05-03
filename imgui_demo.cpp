@@ -447,6 +447,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
 			ImGui::RadioButton("2D lightening", &demoIndex, 11);
 			ImGui::RadioButton("Colors", &demoIndex, 12);
 			ImGui::RadioButton("Basic-3D-Lighting", &demoIndex, 13);
+			ImGui::RadioButton("Materials", &demoIndex, 14);
 			ImGui::TreePop();
 		}
 	}
